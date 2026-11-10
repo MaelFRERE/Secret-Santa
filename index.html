@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
   <title>Secret Santa Noël 2026</title>
   <style>
     :root{
@@ -47,7 +48,7 @@
     .page{
       position:relative;
       min-height:100vh;
-      padding:20px 14px 120px;
+      padding:20px 14px 36px;
       isolation:isolate;
     }
     .wrap{
@@ -244,90 +245,22 @@
       10%{opacity:.9}
       100%{transform:translate3d(var(--drift),110vh,0) rotate(360deg);opacity:.2}
     }
-    .forest{
-      position:fixed;
-      left:0;right:0;bottom:0;
-      height:150px;
-      z-index:1;
-      pointer-events:none;
-      background:
-        linear-gradient(180deg, transparent 0%, transparent 35%, rgba(255,255,255,.10) 35%, rgba(255,255,255,.10) 40%, transparent 40%),
-        linear-gradient(180deg, transparent 0%, rgba(2,15,11,.0) 25%, rgba(5,29,22,.75) 100%);
-    }
-    .trees{
-      position:absolute;
-      inset:auto 0 0;
-      height:140px;
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-around;
-      padding:0 10px;
-      opacity:.95;
-    }
-    .tree{
-      position:relative;
-      width:0;
-      height:0;
-      border-left:22px solid transparent;
-      border-right:22px solid transparent;
-      border-bottom:42px solid #14372a;
-      filter:drop-shadow(0 0 10px rgba(0,0,0,.18));
-    }
-    .tree::before,.tree::after{
-      content:"";
-      position:absolute;
-      left:50%;
-      transform:translateX(-50%);
-      width:0;height:0;
-      border-left:28px solid transparent;
-      border-right:28px solid transparent;
-    }
-    .tree::before{bottom:20px;border-bottom:54px solid #1a4736}
-    .tree::after{bottom:44px;border-bottom:66px solid #215341}
-    .tree span{
-      position:absolute;
-      left:50%;bottom:-14px;
-      transform:translateX(-50%);
-      width:10px;height:18px;
-      background:#5f3b23;
-      border-radius:3px;
-    }
-    .tree.small{transform:scale(.72)}
-    .tree.medium{transform:scale(.9)}
-    .tree.tall{transform:scale(1.12)}
-    .snowbank{
-      position:absolute;
-      left:-3%;right:-3%;bottom:-1px;
-      height:55px;
-      background:radial-gradient(circle at 10% 25%, #f7fbff 0 22%, transparent 24%),
-                 radial-gradient(circle at 28% 20%, #f4f9ff 0 24%, transparent 26%),
-                 radial-gradient(circle at 50% 20%, #f6fbff 0 24%, transparent 26%),
-                 radial-gradient(circle at 72% 25%, #f4f9ff 0 23%, transparent 25%),
-                 radial-gradient(circle at 90% 20%, #f7fbff 0 22%, transparent 24%),
-                 linear-gradient(180deg, rgba(246,250,255,.95), rgba(228,239,247,.96));
-    }
+    .secondary{margin-top:12px;background:transparent;border:1px solid #91aa99;box-shadow:none;color:var(--green);font-size:14px}
+    .notice{border:1px solid #ddc589;background:#fff7df;color:#58451d;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5}
+    input[readonly]{background:#eff3ec;color:#284535}
+    button:focus-visible,summary:focus-visible{outline:3px solid var(--gold-2);outline-offset:4px}
+    .status{margin-top:12px;line-height:1.5}
+    .status.success{color:#1a6444}
+    .personal-link{font-size:13px;margin-top:8px}
+    @media (prefers-reduced-motion:reduce){.flake{animation:none;display:none}input,button{transition:none}}
     @media (max-width:560px){
       .card{padding:20px}
       .result{font-size:21px}
-      .forest{height:120px}
-      .trees{height:108px}
     }
   </style>
 </head>
 <body>
   <div id="snowfall" aria-hidden="true"></div>
-  <div class="forest" aria-hidden="true">
-    <div class="trees">
-      <div class="tree small"><span></span></div>
-      <div class="tree tall"><span></span></div>
-      <div class="tree medium"><span></span></div>
-      <div class="tree small"><span></span></div>
-      <div class="tree tall"><span></span></div>
-      <div class="tree medium"><span></span></div>
-      <div class="tree small"><span></span></div>
-    </div>
-    <div class="snowbank"></div>
-  </div>
 
   <main class="page">
     <div class="wrap">
@@ -336,24 +269,28 @@
         <h1 class="title">Secret Santa 🎁</h1>
         <p class="subtitle">Un tirage au sort magique, secret et festif pour organiser vos cadeaux de Noël en toute simplicité.</p>
         <div class="budget">
-          <span class="emoji">🎄</span>
+          <span class="emoji" aria-hidden="true">🎁</span>
           <strong>10 € – 15 €</strong>
-          <span>Budget conseillé par cadeau</span>
+          <span>Budget par cadeau · 15 € maximum</span>
         </div>
       </header>
 
-      <section class="card" id="joinCard">
+      <p id="connectionMsg" class="notice hidden" role="status" aria-live="polite"></p>
+      <section class="card" id="joinCard" aria-labelledby="joinTitle">
         <div class="pill">❄️ Inscription des participants</div>
-        <h2>Rejoins la fête</h2>
-        <div class="fields">
-          <label for="firstName">Prénom</label>
-          <input id="firstName" maxlength="40" placeholder="Ex. Camille" autocomplete="given-name">
-
-          <label for="lastName">Nom</label>
-          <input id="lastName" maxlength="40" placeholder="Ex. Dupont" autocomplete="family-name">
-        </div>
-        <button id="join">Je participe !</button>
-        <p class="status" id="joinMsg"></p>
+        <h2 id="joinTitle">Rejoins la fête</h2>
+        <p id="sessionInfo" class="muted">Renseigne ton prénom et ton nom pour participer.</p>
+        <form id="joinForm">
+          <div class="fields">
+            <label for="firstName">Prénom</label>
+            <input id="firstName" name="firstName" minlength="2" maxlength="40" required placeholder="Ex. Camille" autocomplete="given-name">
+            <label for="lastName">Nom</label>
+            <input id="lastName" name="lastName" minlength="1" maxlength="40" required placeholder="Ex. Dupont" autocomplete="family-name">
+          </div>
+          <button id="join" type="submit" disabled>Connexion au serveur...</button>
+        </form>
+        <button id="switchParticipant" type="button" class="secondary hidden">Inscrire une autre personne</button>
+        <p class="status" id="joinMsg" role="status" aria-live="polite"></p>
       </section>
 
       <section class="card hidden" id="personal">
@@ -362,7 +299,10 @@
         <p id="welcome"></p>
         <div id="result" class="result">Le tirage n'a pas encore eu lieu.</div>
         <p class="muted">Conserve ce lien personnel pour retrouver ton résultat. Ne le partage pas.</p>
-        <button id="copy">Copier mon lien personnel</button>
+        <label for="personalLink">Mon lien personnel à conserver</label>
+        <input id="personalLink" class="personal-link" type="text" readonly autocomplete="off" spellcheck="false">
+        <button id="copy" type="button">Copier mon lien personnel</button>
+        <p id="copyMsg" class="status" role="status" aria-live="polite"></p>
       </section>
 
       <section class="card">
@@ -378,8 +318,8 @@
           <div class="pill">🔐 Réservé à l'organisateur</div>
           <label for="code">Code administrateur</label>
           <input id="code" type="password" placeholder="Code secret">
-          <button id="draw">Lancer le tirage</button>
-          <p class="status" id="adminMsg"></p>
+          <button id="draw" type="button" disabled>Lancer le tirage</button>
+          <p class="status" id="adminMsg" role="status" aria-live="polite"></p>
           <p class="muted">Action définitive : vérifie que tout le monde est inscrit avant de lancer le tirage.</p>
         </div>
       </details>
@@ -409,103 +349,243 @@
     }
     createSnowfall();
 
-    if(location.protocol === 'file:'){
-      $('joinMsg').textContent = 'Cette page doit être ouverte depuis le serveur de l’application (pas directement comme un fichier HTML). Consulte le README.';
-      $('join').disabled = true;
+    const storageKey = 'secret-santa-token';
+    const isFile = location.protocol === 'file:';
+    function readStoredToken(){
+      try { return localStorage.getItem(storageKey); } catch { return null; }
     }
+    let token = new URL(location.href).searchParams.get('t') || readStoredToken();
+    let state = null;
+    let profile = null;
+    let filledToken = null;
+    let busy = false;
+    let drawing = false;
+    let refreshing = false;
+    let revision = 0;
 
-    const key = 'secret-santa-token';
-    let token = new URL(location.href).searchParams.get('t') || localStorage.getItem(key);
-
-    const api = async (url, data, headers={}) => {
-      const r = await fetch(url, {
-        method: data ? 'POST' : 'GET',
-        headers: {'Content-Type':'application/json', ...headers},
-        body: data ? JSON.stringify(data) : undefined
-      });
-      const raw = await r.text();
-      let parsed;
+    function personalUrl(){
+      const url = new URL(location.href);
+      url.searchParams.set('t', token);
+      url.hash = '';
+      return url.href;
+    }
+    function storeToken(next){
+      token = next || null;
+      revision++;
       try {
-        parsed = raw ? JSON.parse(raw) : {};
-      } catch {
-        throw Error(raw || 'Réponse serveur invalide.');
+        if(token) localStorage.setItem(storageKey, token);
+        else localStorage.removeItem(storageKey);
+      } catch { /* A personal link also works when browser storage is blocked. */ }
+      if(!isFile){
+        const url = new URL(location.href);
+        if(token) url.searchParams.set('t', token);
+        else url.searchParams.delete('t');
+        try { history.replaceState(null, '', url.pathname + url.search + url.hash); } catch {}
       }
-      if(!r.ok) throw Error(parsed.error || 'Erreur');
-      return parsed;
-    };
-
-    async function refresh(){
-      try{
-        const s = await api('/api/state');
-        $('count').textContent = s.participants.length;
-        $('names').replaceChildren(...s.participants.map(n => {
-          const e = document.createElement('span');
-          e.className = 'name';
-          e.textContent = n;
-          return e;
-        }));
-        $('drawStatus').textContent = s.drawn
-          ? '🎉 Le tirage a eu lieu ! Chaque participant peut consulter son résultat via son lien personnel.'
-          : '⏳ En attente du tirage par l’organisateur.';
-        $('joinCard').classList.toggle('hidden', !!token || s.drawn);
-        $('draw').disabled = s.drawn;
-
-        if(token){
-          const p = await api('/api/result', {token});
-          $('personal').classList.remove('hidden');
-          $('welcome').textContent = 'Bonjour ' + p.name + ' !';
-          $('result').textContent = p.drawn
-            ? '🎁 Tu offres un cadeau à ' + p.recipient + ' !'
-            : '⏳ Le tirage n’a pas encore eu lieu.';
+    }
+    function message(id, text, success = false){
+      $(id).textContent = text;
+      $(id).classList.toggle('success', success);
+    }
+    function connectionMessage(text){
+      $('connectionMsg').textContent = text;
+      $('connectionMsg').classList.toggle('hidden', !text);
+    }
+    async function api(url, data, headers = {}){
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        const response = await fetch(url, {
+          method: data === undefined ? 'GET' : 'POST',
+          headers: {'Content-Type':'application/json', ...headers},
+          body: data === undefined ? undefined : JSON.stringify(data),
+          cache: 'no-store', signal: controller.signal
+        });
+        const raw = await response.text();
+        let parsed;
+        try { parsed = JSON.parse(raw); }
+        catch {
+          throw Error('Le serveur ne renvoie pas la r\u00e9ponse attendue. V\u00e9rifie que le site utilise le serveur Node.js (npm start), et non uniquement index.html.');
         }
-      } catch(e){
-        $('joinMsg').textContent = location.protocol === 'file:'
-          ? 'Démarre le serveur pour inscrire les participants.'
-          : ('Connexion au serveur impossible : ' + e.message);
+        if(!parsed || typeof parsed !== 'object') throw Error('R\u00e9ponse serveur invalide.');
+        if(!response.ok){
+          const error = new Error(parsed.error || 'La requ\u00eate a \u00e9chou\u00e9.');
+          error.status = response.status;
+          throw error;
+        }
+        return parsed;
+      } catch(error){
+        if(error.name === 'AbortError') throw Error('Le serveur met trop de temps \u00e0 r\u00e9pondre. R\u00e9essaie dans un instant.');
+        if(error instanceof TypeError) throw Error('Connexion au serveur impossible. V\u00e9rifie ta connexion puis r\u00e9essaie.');
+        throw error;
+      } finally { clearTimeout(timer); }
+    }
+
+    function render(){
+      // A remembered personal token must never hide the name fields.
+      $('joinCard').classList.remove('hidden');
+      const closed = Boolean(state && state.drawn);
+      const known = Boolean(token && profile);
+      const pending = Boolean(token && !profile);
+      $('firstName').readOnly = closed || busy || pending;
+      $('lastName').readOnly = closed || busy || pending;
+      $('join').disabled = isFile || !state || closed || busy || pending;
+      $('join').textContent = busy ? 'Enregistrement...' : closed ? 'Inscriptions ferm\u00e9es'
+        : pending ? 'V\u00e9rification de ton inscription...' : !state ? 'Connexion au serveur...'
+        : known ? 'Enregistrer mes informations' : 'Je participe !';
+      $('joinTitle').textContent = known ? 'Ton inscription' : 'Rejoins la f\u00eate';
+      $('sessionInfo').textContent = closed
+        ? 'Le tirage a eu lieu : les inscriptions et les modifications sont ferm\u00e9es.'
+        : known ? 'Tu es d\u00e9j\u00e0 inscrit. Tu peux compl\u00e9ter ou corriger ton pr\u00e9nom et ton nom avant le tirage.'
+        : pending ? 'V\u00e9rification de ton lien personnel...'
+        : 'Renseigne ton pr\u00e9nom et ton nom pour participer.';
+      $('switchParticipant').classList.toggle('hidden', !known || closed);
+      $('switchParticipant').disabled = busy;
+      $('personal').classList.toggle('hidden', !known);
+      $('draw').disabled = !state || closed || drawing;
+      if(known){
+        if(filledToken !== token){
+          // The earliest version only stored one name. Do not guess a surname.
+          $('firstName').value = profile.firstName || profile.name || '';
+          $('lastName').value = profile.lastName || '';
+          filledToken = token;
+        }
+        $('welcome').textContent = 'Bonjour ' + profile.name + ' !';
+        $('result').textContent = profile.drawn
+          ? 'Tu offres un cadeau \u00e0 ' + profile.recipient + ' !'
+          : 'Le tirage n\u2019a pas encore eu lieu.';
+        $('personalLink').value = personalUrl();
+      } else {
+        $('welcome').textContent = '';
+        $('result').textContent = '';
+        $('personalLink').value = '';
+      }
+      if(state){
+        $('count').textContent = state.participants.length;
+        $('names').replaceChildren(...state.participants.map(name => {
+          const element = document.createElement('span');
+          element.className = 'name';
+          element.textContent = name;
+          return element;
+        }));
+        $('drawStatus').textContent = closed
+          ? 'Le tirage a eu lieu ! Chaque participant retrouve son r\u00e9sultat via son lien personnel.'
+          : 'En attente du tirage par l\u2019organisateur.';
+      }
+    }
+    function forgetSession(){
+      storeToken(null);
+      profile = null;
+      filledToken = null;
+      $('joinForm').reset();
+      message('copyMsg', '');
+    }
+    function invalidSession(){
+      forgetSession();
+      message('joinMsg', 'Ton ancien lien personnel n\u2019est plus reconnu par ce serveur. V\u00e9rifie avec l\u2019organisateur que ton inscription existe toujours avant de te r\u00e9inscrire.');
+    }
+    async function refresh(){
+      if(isFile || refreshing || busy) return;
+      refreshing = true;
+      const stamp = revision;
+      const currentToken = token;
+      try {
+        const next = await api('/api/state');
+        if(stamp !== revision) return;
+        if(!Array.isArray(next.participants)) throw Error('R\u00e9ponse serveur invalide.');
+        state = next;
+        if(currentToken){
+          try {
+            const result = await api('/api/result', {token: currentToken});
+            if(stamp !== revision) return;
+            profile = result;
+            // Save a valid link opened on a new browser, without changing revision.
+            try { localStorage.setItem(storageKey, currentToken); } catch {}
+          } catch(error){
+            if(stamp !== revision) return;
+            if(error.status === 403) invalidSession();
+            else throw error;
+          }
+        }
+        connectionMessage('');
+      } catch(error){
+        if(stamp === revision) connectionMessage(error.message);
+      } finally {
+        refreshing = false;
+        render();
       }
     }
 
-    $('join').onclick = async () => {
-      try{
-        const firstName = $('firstName').value.trim();
-        const lastName = $('lastName').value.trim();
-        const p = await api('/api/join', {firstName, lastName});
-        token = p.token;
-        localStorage.setItem(key, token);
-        history.replaceState(null, '', location.pathname + '?t=' + encodeURIComponent(token));
-        $('joinMsg').textContent = '';
-        await refresh();
-      } catch(e){
-        $('joinMsg').textContent = location.protocol === 'file:'
-          ? 'Démarre le serveur pour inscrire les participants.'
-          : ('Connexion au serveur impossible : ' + e.message);
+    $('joinForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      if(busy || !state || state.drawn || isFile || (token && !profile)) return;
+      const firstName = $('firstName').value.trim();
+      const lastName = $('lastName').value.trim();
+      if(firstName.length < 2 || !lastName){
+        message('joinMsg', 'Renseigne un pr\u00e9nom d\u2019au moins 2 caract\u00e8res et ton nom.');
+        return;
       }
-    };
+      const editing = Boolean(token && profile);
+      busy = true;
+      revision++;
+      message('joinMsg', '');
+      render();
+      try {
+        const payload = {firstName, lastName};
+        if(editing) payload.token = token;
+        const result = await api(editing ? '/api/profile' : '/api/join', payload);
+        if(!editing) storeToken(result.token);
+        profile = {...result, firstName: result.firstName || firstName, lastName: result.lastName || lastName, drawn:false, recipient:null};
+        filledToken = null;
+        message('joinMsg', editing ? 'Tes informations sont enregistr\u00e9es.' : 'Inscription enregistr\u00e9e ! Conserve ton lien personnel ci-dessous.', true);
+      } catch(error){
+        if(error.status === 403 && editing) invalidSession();
+        else message('joinMsg', error.message);
+      } finally {
+        busy = false;
+        render();
+        await refresh();
+      }
+    });
 
-    $('draw').onclick = async () => {
-      if(!confirm('Lancer définitivement le tirage ?')) return;
-      try{
+    $('switchParticipant').addEventListener('click', () => {
+      if(busy || !profile || !state || state.drawn) return;
+      if(!confirm('Avant de changer de participant, conserve ton lien personnel affich\u00e9 ci-dessous. Il sera n\u00e9cessaire pour retrouver ton r\u00e9sultat. Ton inscription ne sera pas supprim\u00e9e.\n\nAs-tu conserv\u00e9 ce lien ?')) return;
+      forgetSession();
+      message('joinMsg', 'Le formulaire est pr\u00eat pour une autre personne. Chaque lien personnel doit rester priv\u00e9.');
+      render();
+      $('firstName').focus();
+    });
+    $('draw').addEventListener('click', async () => {
+      if(drawing || !state || state.drawn) return;
+      if(!confirm('Lancer d\u00e9finitivement le tirage ? V\u00e9rifie que tout le monde est inscrit.')) return;
+      drawing = true;
+      render();
+      try {
         await api('/api/draw', {}, {'x-admin-code': $('code').value});
-        $('adminMsg').textContent = 'Tirage effectué !';
         $('code').value = '';
-        await refresh();
-      } catch(e){
-        $('adminMsg').textContent = e.message;
-      }
-    };
-
-    $('copy').onclick = async () => {
-      const url = location.origin + location.pathname + '?t=' + encodeURIComponent(token);
-      try{
-        await navigator.clipboard.writeText(url);
-        $('copy').textContent = 'Lien copié !';
+        state.drawn = true;
+        message('adminMsg', 'Tirage effectu\u00e9 !', true);
+      } catch(error){ message('adminMsg', error.message); }
+      finally { drawing = false; render(); await refresh(); }
+    });
+    $('copy').addEventListener('click', async () => {
+      if(!token || !profile) return;
+      try {
+        await navigator.clipboard.writeText(personalUrl());
+        message('copyMsg', 'Lien copi\u00e9. Conserve-le sans le partager.', true);
       } catch {
-        prompt('Copie ton lien personnel :', url);
+        $('personalLink').focus();
+        $('personalLink').select();
+        message('copyMsg', 'Copie le lien s\u00e9lectionn\u00e9 et conserve-le dans un endroit priv\u00e9.');
       }
-    };
-
+    });
+    if(isFile){
+      connectionMessage('Aper\u00e7u local : les champs sont visibles, mais l\u2019inscription n\u2019est possible que depuis le serveur de l\u2019application.');
+    }
+    render();
     refresh();
-    setInterval(refresh, 10000);
+    setInterval(() => { if(!document.hidden) refresh(); }, 10000);
   </script>
 </body>
 </html>

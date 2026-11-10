@@ -10,9 +10,12 @@ if(!ADMIN_CODE){
   process.exit(1);
 }
 
-const file = path.resolve('data.json');
+const file = path.resolve(process.env.DATA_FILE || 'data.json');
 let db = {participants:[], drawn:false};
-try { db = JSON.parse(fs.readFileSync(file, 'utf8')); } catch {}
+try { db = JSON.parse(fs.readFileSync(file, 'utf8')); }
+catch(error) {
+  if(error.code !== 'ENOENT'){ console.error('Impossible de lire les inscriptions existantes:', error.message); process.exit(1); }
+}
 
 const displayName = (participant = {}) => {
   if(participant.firstName || participant.lastName){
@@ -34,6 +37,7 @@ db.participants = Array.isArray(db.participants) ? db.participants.map(normalize
 db.drawn = Boolean(db.drawn);
 
 const save = () => {
+  fs.mkdirSync(path.dirname(file), {recursive:true});
   const tmp = file + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(db, null, 2));
   fs.renameSync(tmp, file);
@@ -86,6 +90,7 @@ const server = http.createServer(async (req, res) => {
       if(db.drawn) return send(res, 409, {error:'Les inscriptions sont fermées.'});
 
       const payload = await body(req);
+      if(db.drawn) return send(res, 409, {error:'Les inscriptions sont ferm\u00e9es.'});
       const legacyName = String(payload.name || '').trim();
       const firstName = String(payload.firstName || '').trim().replace(/\s+/g, ' ');
       const lastName = String(payload.lastName || '').trim().replace(/\s+/g, ' ');
@@ -119,8 +124,36 @@ const server = http.createServer(async (req, res) => {
         recipient: null
       });
       db.participants.push(participant);
-      save();
-      return send(res, 200, {name:displayName(participant), token:participant.token});
+      try { save(); } catch(error) { db.participants.pop(); throw error; }
+      return send(res, 200, {name:displayName(participant), firstName:participant.firstName, lastName:participant.lastName, token:participant.token});
+    }
+
+    // The personal token authorizes updates only for its own registration.
+    if(req.method === 'POST' && url.pathname === '/api/profile'){
+      const payload = await body(req);
+      if(typeof payload.token !== 'string' || !payload.token){
+        return send(res, 403, {error:'Lien personnel invalide.'});
+      }
+      const participant = db.participants.find(p => p.token === payload.token);
+      if(!participant) return send(res, 403, {error:'Lien personnel invalide.'});
+      if(db.drawn) return send(res, 409, {error:'Les modifications sont ferm\u00e9es apr\u00e8s le tirage.'});
+      const firstName = typeof payload.firstName === 'string' ? payload.firstName.trim().replace(/\s+/g, ' ') : '';
+      const lastName = typeof payload.lastName === 'string' ? payload.lastName.trim().replace(/\s+/g, ' ') : '';
+      if(firstName.length < 2 || firstName.length > 40){
+        return send(res, 400, {error:'Pr\u00e9nom entre 2 et 40 caract\u00e8res.'});
+      }
+      if(lastName.length < 1 || lastName.length > 40){
+        return send(res, 400, {error:'Nom entre 1 et 40 caract\u00e8res.'});
+      }
+      const name = `${firstName} ${lastName}`;
+      if(db.participants.some(p => p !== participant && displayName(p).toLocaleLowerCase('fr') === name.toLocaleLowerCase('fr'))){
+        return send(res, 409, {error:'Cette personne est d\u00e9j\u00e0 inscrite.'});
+      }
+      const previous = {...participant};
+      Object.assign(participant, {firstName, lastName, name});
+      try { save(); }
+      catch(error) { Object.assign(participant, previous); throw error; }
+      return send(res, 200, {firstName, lastName, name});
     }
 
     if(req.method === 'POST' && url.pathname === '/api/draw'){
@@ -128,22 +161,30 @@ const server = http.createServer(async (req, res) => {
       if(db.drawn) return send(res, 409, {error:'Tirage déjà effectué.'});
       if(db.participants.length < 2) return send(res, 400, {error:'Il faut au moins deux participants.'});
 
+      const previousRecipients = db.participants.map(p => p.recipient);
       const n = db.participants.length;
       const order = shuffle([...Array(n).keys()]);
       for(let i = 0; i < n; i++){
         db.participants[order[i]].recipient = displayName(db.participants[order[(i + 1) % n]]);
       }
       db.drawn = true;
-      save();
+      try { save(); } catch(error) {
+        db.drawn = false;
+        db.participants.forEach((p, i) => { p.recipient = previousRecipients[i]; });
+        throw error;
+      }
       return send(res, 200, {ok:true});
     }
 
     if(req.method === 'POST' && url.pathname === '/api/result'){
       const {token:provided} = await body(req);
+      if(typeof provided !== 'string' || !provided) return send(res, 403, {error:'Lien personnel invalide.'});
       const participant = db.participants.find(p => p.token === provided);
       if(!participant) return send(res, 403, {error:'Lien personnel invalide.'});
       return send(res, 200, {
         name: displayName(participant),
+        firstName: participant.firstName || participant.name || '',
+        lastName: participant.lastName || '',
         drawn: db.drawn,
         recipient: db.drawn ? participant.recipient : null
       });

@@ -1,15 +1,44 @@
 # Secret Santa Noël 2026
 
-Application Node.js sans dépendances externes.
+Application Secret Santa avec ambiance de Noël, tirage secret, budget conseillé de **10 € à 15 €**, et formulaire d'inscription avec **Prénom + Nom**.
 
-## Démarrage
+## Fonctionnalités
 
-Node.js 20 ou plus récent :
+- inscription des participants avec prénom et nom ;
+- design festif : flocons qui tombent, sapins et ambiance enneigée ;
+- tirage réservé à l'organisateur grâce à `ADMIN_CODE` ;
+- chaque participant voit uniquement son propre résultat ;
+- lien personnel à conserver après inscription.
 
+## Lancement en local
+
+1. Décompressez le ZIP.
+2. Installez **Node.js 20** ou supérieur.
+3. Ouvrez un terminal dans le dossier du projet.
+4. Démarrez l'application :
+
+### macOS / Linux
 ```bash
-ADMIN_CODE='un-code-long-et-secret' npm start
+ADMIN_CODE='MonCodeSecret2026' npm start
 ```
 
-Ouvrez http://localhost:3000. Pour partager l'application avec d'autres personnes, déployez ce dossier sur un hébergeur Node.js avec un stockage **persistant**, configurez la variable d'environnement `ADMIN_CODE` et partagez son URL HTTPS.
+### Windows PowerShell
+```powershell
+$env:ADMIN_CODE='MonCodeSecret2026'; npm start
+```
 
-**Important :** les inscriptions et les résultats sont conservés dans `data.json` sur le serveur. Utilisez un disque persistant, sans quoi ils seront perdus lors d'un redéploiement. Ne partagez jamais le code administrateur. Les liens personnels donnent accès aux résultats : ils doivent rester privés. Aucune réinitialisation du tirage n'est prévue.
+5. Ouvrez **http://localhost:3000**.
+
+## Déploiement sur Render
+
+Créez un **Web Service** (et non un Static Site) avec ces réglages :
+
+- **Build Command** : `npm install`
+- **Start Command** : `npm start`
+- **Environment Variable** : `ADMIN_CODE=VotreCodeSecret`
+
+Le fichier `data.json` est utilisé pour stocker les participants et les résultats. Pour un usage réel, pensez à configurer un stockage persistant sur Render.
+
+## Important
+
+N'ouvrez pas simplement `index.html` depuis le ZIP : l'application doit tourner via le serveur Node.js pour que les inscriptions fonctionnent.

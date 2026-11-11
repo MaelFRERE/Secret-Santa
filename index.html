@@ -319,6 +319,7 @@
           <label for="code">Code administrateur</label>
           <input id="code" type="password" placeholder="Code secret">
           <button id="draw" type="button" disabled>Lancer le tirage</button>
+          <p class="muted" id="storageStatus"></p>
           <p class="status" id="adminMsg" role="status" aria-live="polite"></p>
           <p class="muted">Action définitive : vérifie que tout le monde est inscrit avant de lancer le tirage.</p>
         </div>
@@ -355,6 +356,23 @@
       try { return localStorage.getItem(storageKey); } catch { return null; }
     }
     let token = new URL(location.href).searchParams.get('t') || readStoredToken();
+    const pendingKey = 'secret-santa-pending-registration';
+    let pendingRegistration = null;
+    try { pendingRegistration = localStorage.getItem(pendingKey); } catch {}
+    if(pendingRegistration && !/^[a-f0-9]{48}$/.test(pendingRegistration)) pendingRegistration = null;
+    function registrationSecret(){
+      if(!pendingRegistration){
+        const bytes = crypto.getRandomValues(new Uint8Array(24));
+        pendingRegistration = [...bytes].map(x => x.toString(16).padStart(2, '0')).join('');
+        try { localStorage.setItem(pendingKey, pendingRegistration); } catch {}
+      }
+      return pendingRegistration;
+    }
+    function clearPending(){
+      pendingRegistration = null;
+      try { localStorage.removeItem(pendingKey); } catch {}
+    }
+    let sessionInvalid = false;
     let state = null;
     let profile = null;
     let filledToken = null;
@@ -405,6 +423,9 @@
         let parsed;
         try { parsed = JSON.parse(raw); }
         catch {
+          if(response.status >= 500){
+            throw Error('Le serveur redémarre ou est momentanément indisponible. Ton lien personnel reste conservé. La reconnexion est automatique.');
+          }
           throw Error('Le serveur ne renvoie pas la r\u00e9ponse attendue. V\u00e9rifie que le site utilise le serveur Node.js (npm start), et non uniquement index.html.');
         }
         if(!parsed || typeof parsed !== 'object') throw Error('R\u00e9ponse serveur invalide.');
@@ -439,9 +460,10 @@
         : known ? 'Tu es d\u00e9j\u00e0 inscrit. Tu peux compl\u00e9ter ou corriger ton pr\u00e9nom et ton nom avant le tirage.'
         : pending ? 'V\u00e9rification de ton lien personnel...'
         : 'Renseigne ton pr\u00e9nom et ton nom pour participer.';
-      $('switchParticipant').classList.toggle('hidden', !known || closed);
+      $('switchParticipant').classList.toggle('hidden', !(known || sessionInvalid) || closed);
+      $('switchParticipant').textContent = sessionInvalid ? 'Revenir au formulaire' : 'Inscrire une autre personne';
       $('switchParticipant').disabled = busy;
-      $('personal').classList.toggle('hidden', !known);
+      $('personal').classList.toggle('hidden', !token);
       $('draw').disabled = !state || closed || drawing;
       if(known){
         if(filledToken !== token){
@@ -458,9 +480,16 @@
       } else {
         $('welcome').textContent = '';
         $('result').textContent = '';
-        $('personalLink').value = '';
+        $('personalLink').value = token ? personalUrl() : '';
+        if(token){
+          $('welcome').textContent = 'Ton lien personnel est conservé.';
+          $('result').textContent = sessionInvalid ? 'Cette inscription n’est pas retrouvée dans la base actuelle. Contacte l’organisateur.' : 'Reconnexion en cours. Il n’est pas nécessaire de te réinscrire.';
+        }
       }
       if(state){
+        $('storageStatus').textContent = state.storage === 'postgres'
+          ? 'Sauvegarde PostgreSQL active : les inscriptions et le tirage ne sont pas stockés sur le serveur web.'
+          : 'Stockage fichier : un disque persistant est indispensable en hébergement.';
         $('count').textContent = state.participants.length;
         $('names').replaceChildren(...state.participants.map(name => {
           const element = document.createElement('span');
@@ -474,6 +503,8 @@
       }
     }
     function forgetSession(){
+      sessionInvalid = false;
+      clearPending();
       storeToken(null);
       profile = null;
       filledToken = null;
@@ -481,8 +512,10 @@
       message('copyMsg', '');
     }
     function invalidSession(){
-      forgetSession();
-      message('joinMsg', 'Ton ancien lien personnel n\u2019est plus reconnu par ce serveur. V\u00e9rifie avec l\u2019organisateur que ton inscription existe toujours avant de te r\u00e9inscrire.');
+      // Never discard a secret merely because a database is missing or unavailable.
+      sessionInvalid = true;
+      profile = null;
+      message('joinMsg', 'Ton lien reste conservé. Cette base ne retrouve pas ton inscription : demande à l’organisateur de vérifier sa sauvegarde. Ne te réinscris pas automatiquement.');
     }
     async function refresh(){
       if(isFile || refreshing || busy) return;
@@ -494,11 +527,29 @@
         if(stamp !== revision) return;
         if(!Array.isArray(next.participants)) throw Error('R\u00e9ponse serveur invalide.');
         state = next;
+        if(!currentToken && pendingRegistration){
+          try {
+            const recovered = await api('/api/result', {token: pendingRegistration});
+            if(stamp !== revision) return;
+            storeToken(pendingRegistration);
+            clearPending();
+            profile = recovered;
+            sessionInvalid = false;
+            message('joinMsg', 'Ton inscription a été retrouvée après l’interruption.', true);
+            connectionMessage('');
+            return;
+          } catch(error){
+            if(error.status !== 403) throw error;
+            // No committed registration yet: the same key can be retried safely.
+          }
+        }
         if(currentToken){
           try {
             const result = await api('/api/result', {token: currentToken});
             if(stamp !== revision) return;
             profile = result;
+            if(sessionInvalid) message('joinMsg', 'Ton inscription a été retrouvée.', true);
+            sessionInvalid = false;
             // Save a valid link opened on a new browser, without changing revision.
             try { localStorage.setItem(storageKey, currentToken); } catch {}
           } catch(error){
@@ -533,9 +584,11 @@
       try {
         const payload = {firstName, lastName};
         if(editing) payload.token = token;
+        else payload.registrationToken = registrationSecret();
         const result = await api(editing ? '/api/profile' : '/api/join', payload);
-        if(!editing) storeToken(result.token);
-        profile = {...result, firstName: result.firstName || firstName, lastName: result.lastName || lastName, drawn:false, recipient:null};
+        if(!editing) { storeToken(result.token); clearPending(); }
+        sessionInvalid = false;
+        profile = {...result, firstName: result.firstName || firstName, lastName: result.lastName || lastName, drawn:Boolean(result.drawn), recipient:result.recipient || null};
         filledToken = null;
         message('joinMsg', editing ? 'Tes informations sont enregistr\u00e9es.' : 'Inscription enregistr\u00e9e ! Conserve ton lien personnel ci-dessous.', true);
       } catch(error){
@@ -549,7 +602,7 @@
     });
 
     $('switchParticipant').addEventListener('click', () => {
-      if(busy || !profile || !state || state.drawn) return;
+      if(busy || (!profile && !sessionInvalid) || !state || state.drawn) return;
       if(!confirm('Avant de changer de participant, conserve ton lien personnel affich\u00e9 ci-dessous. Il sera n\u00e9cessaire pour retrouver ton r\u00e9sultat. Ton inscription ne sera pas supprim\u00e9e.\n\nAs-tu conserv\u00e9 ce lien ?')) return;
       forgetSession();
       message('joinMsg', 'Le formulaire est pr\u00eat pour une autre personne. Chaque lien personnel doit rester priv\u00e9.');
@@ -570,7 +623,7 @@
       finally { drawing = false; render(); await refresh(); }
     });
     $('copy').addEventListener('click', async () => {
-      if(!token || !profile) return;
+      if(!token) return;
       try {
         await navigator.clipboard.writeText(personalUrl());
         message('copyMsg', 'Lien copi\u00e9. Conserve-le sans le partager.', true);
@@ -586,6 +639,8 @@
     render();
     refresh();
     setInterval(() => { if(!document.hidden) refresh(); }, 10000);
+    window.addEventListener('online', refresh);
+    document.addEventListener('visibilitychange', () => { if(!document.hidden) refresh(); });
   </script>
 </body>
 </html>

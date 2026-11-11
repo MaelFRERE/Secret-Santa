@@ -152,3 +152,7 @@ footer{text-align:center;font-size:11px;letter-spacing:.015em;color:#aac4b4;marg
 .recover-box .button-primary{margin-top:17px}
 .recover-cancel{display:block;margin:11px auto 0}
 @media(max-width:600px){.recover-box h2{font-size:19px}.recover-entry{margin-top:11px}}
+
+.reset-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.reset-actions .mini-button{min-height:42px;flex:1 1 130px}
+@media(max-width:600px){.reset-actions{gap:8px}.reset-actions .mini-button{font-size:12px}}

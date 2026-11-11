@@ -176,6 +176,7 @@ async function deliverPendingPush() {
   try {
     const db = await store.read();
     if (!db.drawn) return;
+    const currentDrawVersion = db.drawVersion || 'legacy';
     const now = Date.now();
     const jobs = [];
     for (const p of db.participants) {
@@ -193,6 +194,8 @@ async function deliverPendingPush() {
         const job = jobs[cursor++];
         let sent = false, gone = false;
         try {
+          const current = await store.read();
+          if (!current.drawn || (current.drawVersion || 'legacy') !== currentDrawVersion) continue;
           await webpush.sendNotification(
             {endpoint: job.subscription.endpoint, keys: job.subscription.keys},
             JSON.stringify({title: 'Le tirage a eu lieu ! 🎁', body: 'Ouvre Secret Santa pour découvrir ton résultat.'}),
@@ -337,6 +340,38 @@ const server = http.createServer(async (req, res) => {
       });
       return send(res, 200, result);
     }
+    if (req.method === 'POST' && url.pathname === '/api/admin/reset') {
+      requireAdmin(req);
+      const payload = await body(req);
+      if (payload.mode !== 'draw' && payload.mode !== 'all') fail(400, 'Type de réinitialisation invalide.');
+      // Deux confirmations distinctes côté interface et serveur pour protéger Neon.
+      if (payload.confirmation !== (payload.mode === 'all' ? 'TOUT SUPPRIMER' : 'REFAIRE LE TIRAGE')) {
+        fail(400, 'Confirmation de réinitialisation incorrecte.');
+      }
+      const result = await store.update(db => {
+        if (payload.mode === 'draw') {
+          if (!db.drawn) fail(409, 'Aucun tirage à annuler.');
+          db.drawn = false;
+          for (const p of db.participants) {
+            p.recipient = null;
+            // Un nouveau tirage devra notifier à nouveau les appareils inscrits.
+            for (const sub of p.pushSubscriptions || []) {
+              sub.sentAt = null;
+              sub.attempts = 0;
+              sub.lastAttemptAt = null;
+            }
+          }
+        } else {
+          db.participants = [];
+          db.drawn = false;
+          // Conservation des clés VAPID pour les anciennes installations PWA.
+        }
+        // Invalide toute ancienne campagne d'alertes en attente.
+        db.drawVersion = crypto.randomUUID();
+        return adminOverview(db);
+      });
+      return send(res, 200, result);
+    }
     if (req.method === 'POST' && url.pathname === '/api/draw') {
       requireAdmin(req);
       await body(req);
@@ -350,6 +385,7 @@ const server = http.createServer(async (req, res) => {
         }
         for (let i = 0; i < order.length; i++) order[i].recipient = displayName(order[(i + 1) % order.length]);
         db.drawn = true;
+        db.drawVersion = crypto.randomUUID();
         return {ok: true, notificationDevices: db.participants.reduce((n, p) => n + (p.pushSubscriptions || []).length, 0)};
       });
       kickPushQueue(true);

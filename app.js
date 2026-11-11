@@ -434,10 +434,13 @@ function renderAdmin(){
     $('adminList').appendChild(row);
   }
   $('adminDraw').disabled = adminBusy || adminState.drawn || p.length < 2;
+  $('adminResetDraw').hidden = !adminState.drawn;
+  $('adminResetDraw').disabled = adminBusy;
+  $('adminResetAll').disabled = adminBusy || (!adminState.drawn && !p.length);
   $('adminDraw').textContent = adminState.drawn ? 'Tirage déjà effectué ✓' : 'Lancer le tirage au sort';
   $('drawExplanation').textContent = adminState.drawn
     ? `Résultats disponibles dans les espaces personnels. ${pushed} alerte${pushed > 1 ? 's' : ''} acceptée${pushed > 1 ? 's' : ''} par les services de notification.`
-    : 'Vérifie les noms. Le tirage est définitif et fermera les inscriptions.';
+    : 'Vérifie les noms avant de lancer le tirage.';
 }
 async function adminAction(path, payload, success){
   if (adminBusy || !adminCode) return;
@@ -497,6 +500,40 @@ $('adminDraw').addEventListener('click', async () => {
   } catch(error){showText('adminMsg', error.message);}
   finally {adminBusy = false;renderAdmin();await refresh();}
 });
+async function resetSecretSanta(mode){
+  if (!adminCode || !adminState || adminBusy) return;
+  const isAll = mode === 'all';
+  const phrase = isAll ? 'TOUT SUPPRIMER' : 'REFAIRE LE TIRAGE';
+  const question = isAll
+    ? `Cette opération supprimera définitivement les ${adminState.participants.length} participants ET le tirage dans Neon. Leurs espaces personnels ne fonctionneront plus.\n\nPour confirmer, écris : ${phrase}`
+    : `Annuler le tirage actuel ? Les ${adminState.participants.length} inscriptions resteront enregistrées et tu pourras relancer le tirage. Les résultats précédents seront perdus.\n\nPour confirmer, écris : ${phrase}`;
+  if (prompt(question) !== phrase) return;
+  adminBusy = true;
+  renderAdmin();
+  showText('adminMsg', '');
+  try {
+    adminState = await adminApi('/api/admin/reset', {mode, confirmation:phrase});
+    adminEditing = null;
+    state = {count:adminState.participants.length, drawn:false, storage:adminState.storage};
+    showText('adminMsg', isAll
+      ? 'Secret Santa remis à zéro. Toutes les inscriptions ont été supprimées.'
+      : 'Tirage annulé. Les participants sont conservés : tu peux modifier la liste et relancer le tirage.', true);
+    if (isAll){
+      storeToken(null);
+      profile = null;
+      sessionInvalid = false;
+      clearPending();
+      $('joinForm').reset();
+    }
+    render();
+    await refresh();
+  } catch(error){
+    showText('adminMsg', error.message);
+    if (error.status === 403) logoutAdmin();
+  } finally {adminBusy = false; renderAdmin();}
+}
+$('adminResetDraw').addEventListener('click', () => void resetSecretSanta('draw'));
+$('adminResetAll').addEventListener('click', () => void resetSecretSanta('all'));
 $('adminDetails').addEventListener('toggle', () => {
   if ($('adminDetails').open && adminCode) void loadAdmin();
 });

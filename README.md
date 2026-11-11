@@ -134,3 +134,11 @@ Pour tester un véritable push de bout en bout, le faire dans un environnement
 Les navigateurs imposent une autorisation explicite : aucune application web
 ne peut activer des notifications systeme de force. Le refus ou les limites
 du telephone ne bloquent ni l'inscription, ni la consultation du tirage.
+
+
+## Réinitialiser depuis l’espace organisateur (v2.3)
+
+- **Refaire le tirage** : disponible après un tirage. Efface les attributions et remet les notifications en attente, mais garde tous les participants et leurs accès personnels. Il faut confirmer en saisissant `REFAIRE LE TIRAGE`. Un nouveau tirage peut envoyer de nouvelles notifications.
+- **Tout réinitialiser** : supprime toutes les inscriptions et les attributions dans Neon (irréversible sans sauvegarde). Il faut saisir `TOUT SUPPRIMER`. Les anciens liens personnels deviennent invalides et les participants doivent se réinscrire. Les clés Web Push du service restent en place.
+
+Ces opérations nécessitent `ADMIN_CODE` et sont enregistrées directement en base. Les notifications déjà parties vers les téléphones ne peuvent pas être rappelées.

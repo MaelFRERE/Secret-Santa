@@ -143,3 +143,12 @@ footer{text-align:center;font-size:11px;letter-spacing:.015em;color:#aac4b4;marg
   .participant-actions{margin-left:auto}
 }
 @media(prefers-reduced-motion:reduce){.flake{display:none}.button,.summary-chevron,input{transition:none}}
+
+/* Retrouver sa session sans encombrer le parcours d'inscription sur mobile. */
+.recover-entry{text-align:center;margin-top:14px}
+.recover-toggle,.recover-cancel{border:0;background:transparent;cursor:pointer;color:#376d50;font-size:13px;font-weight:750;padding:8px 12px;text-decoration:underline;text-underline-offset:3px}
+.recover-toggle:focus-visible,.recover-cancel:focus-visible{outline:3px solid #e0ab48;outline-offset:2px;border-radius:6px}
+.recover-box h2{margin:0 0 16px;font-size:20px;line-height:1.25}
+.recover-box .button-primary{margin-top:17px}
+.recover-cancel{display:block;margin:11px auto 0}
+@media(max-width:600px){.recover-box h2{font-size:19px}.recover-entry{margin-top:11px}}

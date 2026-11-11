@@ -33,7 +33,7 @@
     <p id="connectionMsg" class="connection-banner" role="status" aria-live="polite" hidden></p>
     <p id="drawAnnouncement" class="draw-announcement" role="status" aria-live="polite" hidden>Le tirage est terminé ! Découvre ton résultat ci-dessous.</p>
 
-    <section id="joinCard" class="panel registration" aria-labelledby="joinTitle">
+    <section id="joinCard" class="panel registration" aria-label="Inscription et accès personnel">
       <div id="joinOpen">
         <div class="panel-heading">
           <span class="step-badge">01</span>
@@ -63,6 +63,27 @@
       <div id="joinInvalid" class="invalid-only" hidden>
         <p>Cette inscription n'est plus reconnue. Contacte l'organisateur ou recommence si les inscriptions sont ouvertes.</p>
         <button id="resetSession" type="button" class="button button-muted">Recommencer l'inscription</button>
+      </div>
+      <div id="recoverEntry" class="recover-entry">
+        <button id="recoverToggle" class="recover-toggle" type="button" aria-expanded="false" aria-controls="recoverBox">Déjà inscrit ?</button>
+      </div>
+      <div id="recoverBox" class="recover-box" hidden>
+        <h2 id="recoverTitle">Retrouver mon espace</h2>
+        <form id="recoverForm" aria-labelledby="recoverTitle">
+          <div class="field-row">
+            <div class="field">
+              <label for="recoverFirstName">Prénom</label>
+              <input id="recoverFirstName" name="firstName" minlength="2" maxlength="40" required autocomplete="given-name" placeholder="Camille">
+            </div>
+            <div class="field">
+              <label for="recoverLastName">Nom</label>
+              <input id="recoverLastName" name="lastName" minlength="1" maxlength="40" required autocomplete="family-name" placeholder="Dupont">
+            </div>
+          </div>
+          <button id="recoverButton" class="button button-primary" type="submit">Retrouver mon espace</button>
+          <p id="recoverMsg" class="field-message" role="status" aria-live="polite" hidden></p>
+        </form>
+        <button id="recoverCancel" class="recover-cancel" type="button">Retour à l'inscription</button>
       </div>
     </section>
 

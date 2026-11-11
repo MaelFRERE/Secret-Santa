@@ -47,6 +47,22 @@ for (const [route, filename, type] of [
 
 class ApiError extends Error { constructor(status, message) { super(message); this.status = status; } }
 const fail = (status, message) => { throw new ApiError(status, message); };
+// Limite les recherches en masse. Cette mesure ne remplace pas une authentification :
+// connaître un prénom et un nom reste suffisant pour accéder à un tirage.
+const recoveryAttempts = new Map();
+function throttleRecovery(req) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.socket.remoteAddress) || 'unknown';
+  const existing = recoveryAttempts.get(ip);
+  const attempts = existing && now - existing.start < windowMs ? existing : {start: now, count: 0};
+  if (++attempts.count > 60) fail(429, 'Trop de recherches. Réessaie un peu plus tard.');
+  recoveryAttempts.set(ip, attempts);
+  if (recoveryAttempts.size > 2000) {
+    for (const [key, value] of recoveryAttempts) if (now - value.start >= windowMs) recoveryAttempts.delete(key);
+  }
+}
 const securityHeaders = {
   'Cache-Control': 'no-store',
   'X-Content-Type-Options': 'nosniff',
@@ -85,6 +101,17 @@ function findParticipant(db, token) {
   const p = db.participants.find(p => p.token === token);
   if (!p) fail(403, 'Inscription introuvable. Demande à l’organisateur si elle a été supprimée.');
   return p;
+}
+function searchRegisteredName(db, identity) {
+  const lower = value => value.normalize('NFC').toLocaleLowerCase('fr');
+  // D'abord exact (sauf majuscules). Les accents ne sont ignorés qu'en recours.
+  const exact = db.participants.filter(p => lower(displayName(p)) === lower(identity.name));
+  if (exact.length === 1) return exact[0];
+  const basic = value => value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr');
+  const approximate = db.participants.filter(p => basic(displayName(p)) === basic(identity.name));
+  if (approximate.length > 1) fail(409, 'Plusieurs inscriptions correspondent à ce nom. Contacte l’organisateur.');
+  if (!approximate.length) fail(404, 'Inscription introuvable. Vérifie ton prénom et ton nom.');
+  return approximate[0];
 }
 function checkName(db, identity, except) {
   if (db.participants.some(p => p !== except && displayName(p).toLocaleLowerCase('fr') === identity.name.toLocaleLowerCase('fr'))) {
@@ -234,6 +261,13 @@ const server = http.createServer(async (req, res) => {
         return {...profile(p, false), token: p.token};
       });
       return send(res, 200, result);
+    }
+    if (req.method === 'POST' && url.pathname === '/api/recover') {
+      throttleRecovery(req);
+      const identity = names(await body(req));
+      const db = await store.read();
+      const p = searchRegisteredName(db, identity);
+      return send(res, 200, {...profile(p, db.drawn), token: p.token});
     }
     if (req.method === 'POST' && url.pathname === '/api/profile') {
       const payload = await body(req);

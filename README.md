@@ -1,16 +1,24 @@
-# Secret Santa 2026 — Neon Free + Render Free (v2)
+# Secret Santa 2026 — Neon Free + Render Free (v2.2)
 
 ## Nouveautés
 
+- Bouton **« Déjà inscrit ? »** sous le formulaire : une personne peut retrouver
+  son inscription sur un **autre téléphone ou navigateur**, en saisissant son
+  prénom et son nom. Aucune création de compte ni code à noter. Cette option
+  est également disponible **après le tirage**, quand les inscriptions sont fermées.
+  Le nouvel appareil conserve ensuite sa session dans son propre navigateur.
 - Interface mobile allégée : 2 champs avant l'inscription, puis uniquement
   « Inscription enregistrée ! » et un bloc « Mon espace » avec le résultat.
 - Les participants ne voient plus la liste des autres, ni un champ/lien à copier.
 - L'organisateur voit la liste privée, peut corriger ou supprimer des participants
   **avant le tirage**, puis lancer le tirage via son bouton.
-- Notifications Web Push : les participants qui cliquent sur
-  « Me prévenir du tirage » reçoivent une alerte navigateur lors du tirage,
-  si leur appareil et leur navigateur le permettent. Le destinataire du cadeau
-  n'est JAMAIS inclus dans la notification.
+- Notifications Web Push : au clic sur « Je participe ! », l'application
+  demande directement la permission du navigateur compatible, puis abonne
+  automatiquement l'appareil si la personne accepte. Aucun bouton supplementaire
+  n'est necessaire pour les nouveaux inscrits ayant accepte. Les personnes deja
+  inscrites peuvent encore utiliser « Activer les alertes » une fois.
+  Un refus n'empeche jamais de s'inscrire. Le destinataire du cadeau n'est
+  JAMAIS inclus dans la notification.
 - Sauvegarde Neon conservée : données, tirage, abonnements push et clés VAPID
   sont stockés dans PostgreSQL. Les anciennes inscriptions déjà présentes sur
   Neon sont réutilisées, sans supprimer ni réinitialiser leur état.
@@ -39,6 +47,28 @@
    `Notifications : Web Push`. Ne jamais mettre `DATABASE_URL` ni `ADMIN_CODE`
    dans les fichiers GitHub.
 
+## Accès depuis un autre téléphone ou navigateur
+
+1. Ouvrir l'adresse habituelle du Secret Santa.
+2. Cliquer sur **« Déjà inscrit ? »** (visible même quand le tirage est terminé).
+3. Saisir le même **Prénom** et le même **Nom** que lors de l'inscription
+   puis toucher **« Retrouver mon espace »**.
+4. La confirmation et le résultat personnel s'affichent automatiquement.
+   Le navigateur mémorise la session pour les prochaines visites.
+
+Le formulaire accepte les différences de majuscules et, si la correspondance
+est unique, les accents. Si deux personnes ont des noms trop similaires,
+il invite à contacter l'organisateur pour éviter une attribution incorrecte.
+Il ne crée **jamais** une deuxième inscription.
+
+**Confidentialité : cette méthode est volontairement moins sécurisée.** Toute
+personne connaissant le prénom et le nom d'un participant peut consulter son
+tirage en utilisant cette fonction. Il n'est donc **pas possible de garantir
+un secret strict** avec cette méthode sans autre vérification. Une limite de
+recherches réduit les tentatives massives, mais ne supprime pas ce risque.
+Si tu veux une protection plus forte, utilise un code secret personnel ou une
+authentification supplémentaire.
+
 ## Comment utiliser l'administration
 
 Ouvrir le site, toucher « Accès organisateur » en bas, saisir `ADMIN_CODE` et
@@ -51,12 +81,16 @@ modifications/suppressions, pour ne pas invalider les cadeaux attribués.
 
 ## Notifications sur téléphone
 
-- **Android et ordinateur** : un participant inscrit clique sur
-  « Me prévenir du tirage », puis accepte la demande de notification.
+- **Android et ordinateur** : en cliquant sur « Je participe ! », le navigateur
+  peut demander directement d'autoriser les notifications. Si la personne
+  accepte, l'abonnement est automatique. Un participant inscrit avant cette
+  mise a jour peut cliquer sur « Activer les alertes » si ce bouton apparait.
 - **iPhone/iPad (iOS/iPadOS 16.4+)** : s'inscrire dans Safari, toucher
-  « Me prévenir du tirage » pour obtenir l'aide ; utiliser Partager →
+  « Activer les alertes » pour obtenir l'aide ; utiliser Partager →
   « Sur l'écran d'accueil », **ouvrir ensuite l'icône installée**, puis
-  recliquer sur « Me prévenir du tirage » et accepter la demande.
+  cliquer sur « Activer les alertes » et accepter la demande. Si l'inscription
+  est faite directement dans l'application deja installee, la demande apparait
+  des le clic sur « Je participe ! ».
   L'application ouvre automatiquement le bon espace personnel grâce à son
   manifeste de lancement personnalisé, même si l'app installée a un stockage
   distinct de Safari.
@@ -69,7 +103,7 @@ modifications/suppressions, pour ne pas invalider les cadeaux attribués.
 
 ## Données et sécurité
 
-- L'URL `/?t=...` et le stockage du navigateur permettent de retrouver le bon
+- L’URL `/?t=...` et le stockage du navigateur permettent de retrouver le bon
   espace sans afficher de lien dans l'interface. **Ne partagez pas cette URL**
   : elle donne accès au résultat personnel. La liste admin ne dévoile pas ces
   clés secrètes.
@@ -94,3 +128,9 @@ encore être vérifiés sur l'hébergement après déploiement.
 Pour tester un véritable push de bout en bout, le faire dans un environnement
 **de test distinct** avec 2 participants fictifs : ne pas lancer un tirage
 « juste pour voir » sur un groupe réel déjà inscrit.
+
+## Limite des autorisations
+
+Les navigateurs imposent une autorisation explicite : aucune application web
+ne peut activer des notifications systeme de force. Le refus ou les limites
+du telephone ne bloquent ni l'inscription, ni la consultation du tirage.

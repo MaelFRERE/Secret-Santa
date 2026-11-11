@@ -10,10 +10,12 @@ if (pendingRegistration && !/^[a-f0-9]{48}$/.test(pendingRegistration)) pendingR
 let profile = null;
 let state = null;
 let sessionInvalid = false;
+let recoverOpen = false;
 let busy = false;
 let refreshing = false;
 let revision = 0;
 let pushEnabled = false;
+let pushAutoPending = false;
 let pushCheckingToken = null;
 let adminCode = null; // Volontairement en mémoire uniquement, pas dans localStorage.
 let adminState = null;
@@ -109,11 +111,17 @@ function render(){
   const known = Boolean(token && profile);
   const pending = Boolean(token && !profile && !sessionInvalid);
   const closed = Boolean(state?.drawn);
-  $('joinOpen').hidden = known || pending || sessionInvalid || closed;
+  $('joinOpen').hidden = known || pending || sessionInvalid || closed || recoverOpen;
   $('joinSuccess').hidden = !known;
   $('joinChecking').hidden = !pending;
-  $('joinInvalid').hidden = !sessionInvalid;
-  $('joinClosed').hidden = known || pending || sessionInvalid || !closed;
+  $('joinInvalid').hidden = !sessionInvalid || recoverOpen;
+  $('joinClosed').hidden = known || pending || sessionInvalid || !closed || recoverOpen;
+  $('recoverEntry').hidden = known || pending || recoverOpen;
+  $('recoverBox').hidden = known || pending || !recoverOpen;
+  $('recoverToggle').disabled = busy;
+  $('recoverToggle').setAttribute('aria-expanded', String(recoverOpen));
+  $('recoverButton').disabled = busy || !state || isFile;
+  $('recoverButton').textContent = busy ? 'Recherche en cours…' : 'Retrouver mon espace';
   $('resetSession').hidden = closed;
   $('joinButton').disabled = !state || closed || busy || isFile;
   $('joinButton').textContent = busy ? 'Inscription en cours…' : !state ? 'Connexion en cours…' : 'Je participe !';
@@ -127,7 +135,9 @@ function render(){
     $('countBadge').textContent = state.drawn ? 'Tirage effectué' :
       `${state.count} ${state.count > 1 ? 'inscrits' : 'inscrit'}`;
   }
-  $('pushPanel').hidden = !known || closed;
+  // Aucun bloc superflu si l'alerte est deja active ou refusee.
+  $('pushPanel').hidden = !known || closed || pushEnabled || pushAutoPending ||
+    ('Notification' in window && Notification.permission === 'denied');
   renderPush();
 }
 function isIOS(){
@@ -147,52 +157,73 @@ function pushSupportMessage(){
 }
 function renderPush(){
   const btn = $('enablePush');
-  btn.disabled = pushEnabled || busy;
-  btn.textContent = pushEnabled ? '✓ Notifications activées' : '🔔 Me prévenir du tirage';
+  btn.disabled = pushEnabled || busy || pushAutoPending;
+  btn.textContent = pushEnabled ? '✓ Notifications activées' : '🔔 Activer les alertes';
 }
-async function syncExistingPush(){
-  if (!token || !profile || !state || state.drawn || pushCheckingToken === token) return;
-  pushCheckingToken = token;
-  if (pushSupportMessage()) return;
-  if (Notification.permission !== 'granted') return;
+// Doit etre appele directement pendant le clic sur "Je participe !".
+// Les navigateurs refusent les demandes de permission declenchees apres un fetch.
+function promptPushDuringSignup(){
+  if (pushSupportMessage() || Notification.permission === 'denied') return null;
+  if (Notification.permission === 'granted') return Promise.resolve('granted');
   try {
-    const reg = await navigator.serviceWorker.getRegistration('/');
-    const sub = await reg?.pushManager.getSubscription();
-    if (!sub) return;
-    await api('/api/push/subscribe', {token, subscription: sub.toJSON()});
-    pushEnabled = true;
-    renderPush();
+    return Promise.resolve(Notification.requestPermission()).catch(() => 'default');
   } catch {
-    pushCheckingToken = null; // La prochaine connexion pourra réessayer.
+    return Promise.resolve('default');
   }
 }
-$('enablePush').addEventListener('click', async () => {
-  if (!token || !profile || !state || state.drawn || busy || pushEnabled) return;
-  const unsupported = pushSupportMessage();
-  if (unsupported){ showText('pushStatus', unsupported); return; }
-  const btn = $('enablePush');
-  btn.disabled = true;
-  showText('pushStatus', 'Activation en cours…', true);
+async function registerPushForCurrentParticipant(permissionPromise, showFeedback = false){
+  const currentToken = token;
+  if (!currentToken || !profile || state?.drawn) return;
+  pushAutoPending = true;
+  render();
   try {
-    // Déclenché immédiatement par le geste de l’utilisateur (requis notamment par Safari).
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted'){
-      showText('pushStatus', 'Notifications non autorisées. Ton résultat restera visible dans ton espace.');
-      return;
-    }
+    const permission = await permissionPromise;
+    if (permission !== 'granted') return;
     const reg = await navigator.serviceWorker.register('/sw.js', {scope: '/'});
     await navigator.serviceWorker.ready;
     const {publicKey} = await api('/api/push/config');
     const bytes = Uint8Array.from(atob(publicKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
     const current = await reg.pushManager.getSubscription();
-    const sub = current || await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:bytes});
-    await api('/api/push/subscribe', {token, subscription:sub.toJSON()});
+    const sub = current || await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:bytes});
+    // Ne pas inscrire un autre utilisateur si la session a change entre-temps.
+    if (currentToken !== token || !profile || state?.drawn) return;
+    await api('/api/push/subscribe', {token:currentToken, subscription:sub.toJSON()});
+    if (currentToken !== token) return;
     pushEnabled = true;
-    pushCheckingToken = token;
-    showText('pushStatus', 'Tu recevras une alerte lorsque le tirage aura lieu.', true);
+    pushCheckingToken = currentToken;
+    if (showFeedback) showText('pushStatus', 'Alerte active pour le tirage.', true);
   } catch(error){
-    showText('pushStatus', error.message || 'Activation impossible. Réessaie plus tard.');
-  } finally { renderPush(); }
+    if (showFeedback) showText('pushStatus', error.message || 'Activation impossible. Tu peux reessayer.');
+  } finally {
+    pushAutoPending = false;
+    render();
+  }
+}
+async function syncExistingPush(){
+  if (!token || !profile || !state || state.drawn || pushCheckingToken === token || pushAutoPending) return;
+  if (pushSupportMessage() || Notification.permission !== 'granted') return;
+  const currentToken = token;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration('/');
+    const sub = await reg?.pushManager.getSubscription();
+    if (!sub) return;
+    if (currentToken !== token) return;
+    await api('/api/push/subscribe', {token:currentToken, subscription:sub.toJSON()});
+    if (currentToken !== token) return;
+    pushEnabled = true;
+    pushCheckingToken = currentToken;
+    render();
+  } catch {
+    // La prochaine actualisation pourra reessayer apres une indisponibilite.
+  }
+}
+$('enablePush').addEventListener('click', () => {
+  if (!token || !profile || !state || state.drawn || busy || pushEnabled || pushAutoPending) return;
+  const unsupported = pushSupportMessage();
+  if (unsupported){ showText('pushStatus', unsupported); return; }
+  // La permission doit etre demandee pendant ce geste, avant tout await.
+  const permission = promptPushDuringSignup();
+  if (permission) void registerPushForCurrentParticipant(permission, true);
 });
 
 async function refresh(){
@@ -247,6 +278,9 @@ $('joinForm').addEventListener('submit', async event => {
   const firstName = $('firstName').value.trim();
   const lastName = $('lastName').value.trim();
   if (firstName.length < 2 || !lastName){ showText('joinMsg', 'Indique ton prénom et ton nom.'); return; }
+  // Propose immediatement l'alerte dans le geste de soumission (avant le fetch).
+  // Le refus ne bloque jamais l'inscription ni l'acces au tirage.
+  const permissionPromise = promptPushDuringSignup();
   busy = true;
   revision++;
   showText('joinMsg', '');
@@ -257,14 +291,61 @@ $('joinForm').addEventListener('submit', async event => {
     clearPending();
     sessionInvalid = false;
     profile = result;
+    recoverOpen = false;
     showText('connectionMsg', '');
+    if (permissionPromise) void registerPushForCurrentParticipant(permissionPromise);
     if (isIOS() && !isStandalone()) {
       // Recharger avec le manifeste personnalisé garantit que l'icône iOS
       // rouvre la bonne inscription malgré son stockage séparé.
       location.reload();
       return;
     }
-  } catch(error){ showText('joinMsg', error.message); }
+  } catch(error){ showText('joinMsg', error.status === 409 && error.message.includes('déjà inscrite') ? 'Cette personne est déjà inscrite. Utilise « Déjà inscrit ? » ci-dessous.' : error.message); }
+  finally { busy = false; render(); await refresh(); }
+});
+$('recoverToggle').addEventListener('click', () => {
+  recoverOpen = true;
+  showText('recoverMsg', '');
+  render();
+  $('recoverFirstName').focus();
+});
+$('recoverCancel').addEventListener('click', () => {
+  recoverOpen = false;
+  showText('recoverMsg', '');
+  render();
+});
+$('recoverForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (busy || !state || profile || isFile) return;
+  const firstName = $('recoverFirstName').value.trim();
+  const lastName = $('recoverLastName').value.trim();
+  if (firstName.length < 2 || !lastName) {
+    showText('recoverMsg', 'Saisis ton prénom et ton nom.');
+    return;
+  }
+  // La permission doit être demandée avant le réseau, durant le clic.
+  // Refuser la notification ne bloque pas la récupération du compte.
+  const permissionPromise = promptPushDuringSignup();
+  busy = true;
+  revision++;
+  showText('recoverMsg', '');
+  render();
+  try {
+    const found = await api('/api/recover', {firstName, lastName});
+    storeToken(found.token);
+    clearPending();
+    sessionInvalid = false;
+    recoverOpen = false;
+    profile = found;
+    $('recoverForm').reset();
+    showText('connectionMsg', '');
+    if (permissionPromise) void registerPushForCurrentParticipant(permissionPromise);
+    if (isIOS() && !isStandalone()) {
+      // Permet d'installer la PWA iOS avec la clé de session récupérée.
+      location.reload();
+      return;
+    }
+  } catch(error){ showText('recoverMsg', error.message); }
   finally { busy = false; render(); await refresh(); }
 });
 $('resetSession').addEventListener('click', () => {

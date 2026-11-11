@@ -29,8 +29,31 @@ export function validateState(value) {
       throw new Error('Sauvegarde invalide : nom absent ou dupliqu\u00e9.');
     }
     p.recipient ??= null;
+    p.pushSubscriptions ??= [];
+    if (!Array.isArray(p.pushSubscriptions) || p.pushSubscriptions.length > 4) {
+      throw new Error('Sauvegarde invalide : abonnements push incorrects.');
+    }
+    for (const sub of p.pushSubscriptions) {
+      if (!sub || typeof sub.endpoint !== 'string' || sub.endpoint.length > 2048 ||
+          !sub.keys || typeof sub.keys.p256dh !== 'string' || typeof sub.keys.auth !== 'string') {
+        throw new Error('Sauvegarde invalide : abonnement push mal formé.');
+      }
+      sub.sentAt ??= null;
+      sub.attempts ??= 0;
+      sub.lastAttemptAt ??= null;
+      if (typeof sub.attempts !== 'number' || sub.attempts < 0 || sub.attempts > 10 ||
+          (sub.sentAt !== null && typeof sub.sentAt !== 'string') ||
+          (sub.lastAttemptAt !== null && typeof sub.lastAttemptAt !== 'string')) {
+        throw new Error('Sauvegarde invalide : suivi push incorrect.');
+      }
+    }
     tokens.add(p.token);
     names.add(p.name.toLocaleLowerCase('fr'));
+  }
+  if (db.pushVapid !== undefined && (!db.pushVapid ||
+      typeof db.pushVapid.publicKey !== 'string' ||
+      typeof db.pushVapid.privateKey !== 'string')) {
+    throw new Error('Sauvegarde invalide : clés de notification incorrectes.');
   }
   if (db.drawn) {
     const recipients = new Set();

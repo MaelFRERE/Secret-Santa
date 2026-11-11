@@ -2,645 +2,116 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b3028">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="referrer" content="no-referrer">
-  <title>Secret Santa Noël 2026</title>
-  <style>
-    :root{
-      --bg:#08291f;
-      --bg2:#103d2f;
-      --card:#fffaf0;
-      --card-border:#e7d8bd;
-      --gold:#f4d48f;
-      --gold-2:#c79d45;
-      --red:#b22d39;
-      --red-dark:#8f1f2a;
-      --green:#174737;
-      --green-2:#245b46;
-      --text:#18352b;
-      --muted:#587165;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    *{box-sizing:border-box}
-    html,body{min-height:100%}
-    body{
-      margin:0;
-      color:#f9eed9;
-      background:
-        radial-gradient(circle at top, rgba(255,255,255,.20), transparent 30%),
-        radial-gradient(circle at 80% 8%, rgba(255,223,160,.12), transparent 18%),
-        linear-gradient(180deg,#174737 0%, #0d3027 45%, #08231c 100%);
-      overflow-x:hidden;
-    }
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      background:
-        radial-gradient(circle at 15% 12%, rgba(255,255,255,.85) 0 1px, transparent 2px),
-        radial-gradient(circle at 62% 18%, rgba(255,255,255,.7) 0 1.3px, transparent 2.2px),
-        radial-gradient(circle at 80% 10%, rgba(255,255,255,.75) 0 1px, transparent 2px),
-        radial-gradient(circle at 38% 28%, rgba(255,255,255,.55) 0 1.2px, transparent 2px),
-        radial-gradient(circle at 24% 36%, rgba(255,255,255,.55) 0 1px, transparent 2px);
-      opacity:.8;
-    }
-    .page{
-      position:relative;
-      min-height:100vh;
-      padding:20px 14px 36px;
-      isolation:isolate;
-    }
-    .wrap{
-      position:relative;
-      z-index:2;
-      max-width:600px;
-      margin:0 auto;
-      text-align:center;
-    }
-    .hero{
-      position:relative;
-      padding-top:6px;
-      margin-bottom:16px;
-    }
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      padding:7px 15px;
-      border:1px solid rgba(255,239,205,.35);
-      border-radius:999px;
-      background:rgba(255,255,255,.08);
-      backdrop-filter: blur(4px);
-      color:#f8dd9d;
-      font-size:12px;
-      letter-spacing:2px;
-      font-weight:800;
-      text-transform:uppercase;
-      box-shadow:0 10px 24px rgba(0,0,0,.12);
-    }
-    .badge::before,.badge::after{content:"✦";opacity:.9}
-    .title{
-      margin:14px 0 10px;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size:clamp(44px, 10vw, 70px);
-      line-height:1;
-      color:#ffe6b2;
-      text-shadow:0 3px 0 rgba(0,0,0,.1), 0 14px 35px rgba(0,0,0,.22);
-    }
-    .subtitle{
-      margin:0 auto 14px;
-      max-width:500px;
-      color:#eef4ed;
-      line-height:1.6;
-      font-size:15px;
-    }
-    .budget{
-      max-width:280px;
-      margin:18px auto 8px;
-      background:linear-gradient(180deg, rgba(36,91,70,.95), rgba(24,71,55,.96));
-      border:1px solid rgba(244,212,143,.45);
-      border-radius:22px;
-      padding:16px 18px;
-      box-shadow:0 12px 28px rgba(0,0,0,.2);
-    }
-    .budget .emoji{font-size:28px;display:block;margin-bottom:4px}
-    .budget strong{display:block;font-size:30px;color:var(--gold)}
-    .budget span{font-size:13px;color:#ebf4ef}
-    .card{
-      text-align:left;
-      background:linear-gradient(180deg, rgba(255,250,240,.98), rgba(253,246,232,.99));
-      color:var(--text);
-      border:1px solid var(--card-border);
-      border-radius:24px;
-      padding:22px;
-      margin:18px 0;
-      box-shadow:0 18px 38px rgba(2,18,14,.25);
-      position:relative;
-      overflow:hidden;
-    }
-    .card::after{
-      content:"";
-      position:absolute;
-      inset:auto -55px -55px auto;
-      width:140px;
-      height:140px;
-      background:radial-gradient(circle, rgba(244,212,143,.18), transparent 70%);
-      pointer-events:none;
-    }
-    .card h2{
-      margin:0 0 16px;
-      font-size:23px;
-      color:var(--green);
-    }
-    .fields{display:grid;gap:2px}
-    label{display:block;font-weight:800;margin-bottom:8px;color:var(--green)}
-    input{
-      width:100%;
-      border:1px solid #ccd6cf;
-      border-radius:14px;
-      padding:14px 15px;
-      font-size:16px;
-      margin-bottom:14px;
-      background:#fffefb;
-      color:#18352b;
-      outline:none;
-      transition:border-color .2s, box-shadow .2s, transform .2s;
-    }
-    input:focus{
-      border-color:#b98b37;
-      box-shadow:0 0 0 4px rgba(244,212,143,.25);
-      transform:translateY(-1px);
-    }
-    button{
-      width:100%;
-      border:0;
-      border-radius:14px;
-      padding:15px 16px;
-      background:linear-gradient(180deg,var(--red),var(--red-dark));
-      color:white;
-      font-size:16px;
-      font-weight:800;
-      cursor:pointer;
-      box-shadow:0 12px 22px rgba(143,31,42,.28);
-      transition:transform .15s ease, filter .2s ease;
-    }
-    button:hover{filter:brightness(1.02);transform:translateY(-1px)}
-    button:active{transform:translateY(0)}
-    button:disabled{opacity:.55;cursor:not-allowed;transform:none}
-    .muted{font-size:13px;color:var(--muted);line-height:1.5}
-    .status{min-height:22px;font-size:14px;color:#a32930;margin:0}
-    .names{display:flex;flex-wrap:wrap;gap:10px}
-    .name{
-      background:#ebf3eb;
-      border:1px solid #d4e3d4;
-      color:#174737;
-      border-radius:999px;
-      padding:8px 13px;
-      font-weight:700;
-      font-size:14px;
-    }
-    .hidden{display:none}
-    .result{
-      background:linear-gradient(180deg,#edf5ec,#e4f0e4);
-      border:1px solid #d7e6d5;
-      padding:20px;
-      border-radius:18px;
-      text-align:center;
-      font-size:23px;
-      font-weight:800;
-      color:#145339;
-      line-height:1.4;
-    }
-    .admin{margin-top:26px}
-    .admin summary{
-      cursor:pointer;
-      color:#f7e0ae;
-      font-weight:700;
-      list-style:none;
-    }
-    .admin summary::-webkit-details-marker{display:none}
-    .admin summary::before{content:"🎅 ";}
-    .admin .card{margin-top:12px}
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:7px;
-      background:#eef4ed;
-      color:#215341;
-      border-radius:999px;
-      padding:7px 11px;
-      font-size:12px;
-      font-weight:700;
-      margin-bottom:10px;
-    }
-    footer{
-      position:relative;
-      z-index:2;
-      font-size:12px;
-      color:#d5d9c6;
-      margin:28px 0 0;
-      text-align:center;
-    }
-    #snowfall{
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      z-index:0;
-      overflow:hidden;
-    }
-    .flake{
-      position:absolute;
-      top:-10vh;
-      color:rgba(255,255,255,.9);
-      user-select:none;
-      animation-name:fall;
-      animation-timing-function:linear;
-      animation-iteration-count:infinite;
-      text-shadow:0 0 8px rgba(255,255,255,.15);
-      opacity:.85;
-    }
-    @keyframes fall{
-      0%{transform:translate3d(0,-10vh,0) rotate(0deg);opacity:0}
-      10%{opacity:.9}
-      100%{transform:translate3d(var(--drift),110vh,0) rotate(360deg);opacity:.2}
-    }
-    .secondary{margin-top:12px;background:transparent;border:1px solid #91aa99;box-shadow:none;color:var(--green);font-size:14px}
-    .notice{border:1px solid #ddc589;background:#fff7df;color:#58451d;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5}
-    input[readonly]{background:#eff3ec;color:#284535}
-    button:focus-visible,summary:focus-visible{outline:3px solid var(--gold-2);outline-offset:4px}
-    .status{margin-top:12px;line-height:1.5}
-    .status.success{color:#1a6444}
-    .personal-link{font-size:13px;margin-top:8px}
-    @media (prefers-reduced-motion:reduce){.flake{animation:none;display:none}input,button{transition:none}}
-    @media (max-width:560px){
-      .card{padding:20px}
-      .result{font-size:21px}
-    }
-  </style>
+  <meta name="description" content="Secret Santa Noël 2026 : inscris-toi, attends le tirage et découvre ton cadeau surprise.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Secret Santa · Noël 2026</title>
+  <script src="/app.js" defer></script>
 </head>
 <body>
   <div id="snowfall" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="hero">
+      <span class="topline"><span class="topline-star">✦</span> Noël 2026 <span class="topline-star">✦</span></span>
+      <div class="hero-mark" aria-hidden="true">🎁</div>
+      <h1>Secret <span>Santa</span></h1>
+      <p class="hero-subtitle">Un petit cadeau. Une grande surprise.</p>
+      <div class="hero-meta">
+        <span class="budget-label">10–15 € <span>par cadeau</span></span>
+        <span class="meta-dot" aria-hidden="true"></span>
+        <span id="countBadge" aria-live="polite">Connexion…</span>
+      </div>
+    </header>
 
-  <main class="page">
-    <div class="wrap">
-      <header class="hero">
-        <div class="badge">Noël 2026</div>
-        <h1 class="title">Secret Santa 🎁</h1>
-        <p class="subtitle">Un tirage au sort magique, secret et festif pour organiser vos cadeaux de Noël en toute simplicité.</p>
-        <div class="budget">
-          <span class="emoji" aria-hidden="true">🎁</span>
-          <strong>10 € – 15 €</strong>
-          <span>Budget par cadeau · 15 € maximum</span>
+    <p id="connectionMsg" class="connection-banner" role="status" aria-live="polite" hidden></p>
+    <p id="drawAnnouncement" class="draw-announcement" role="status" aria-live="polite" hidden>Le tirage est terminé ! Découvre ton résultat ci-dessous.</p>
+
+    <section id="joinCard" class="panel registration" aria-labelledby="joinTitle">
+      <div id="joinOpen">
+        <div class="panel-heading">
+          <span class="step-badge">01</span>
+          <h2 id="joinTitle">Je m'inscris</h2>
         </div>
-      </header>
-
-      <p id="connectionMsg" class="notice hidden" role="status" aria-live="polite"></p>
-      <section class="card" id="joinCard" aria-labelledby="joinTitle">
-        <div class="pill">❄️ Inscription des participants</div>
-        <h2 id="joinTitle">Rejoins la fête</h2>
-        <p id="sessionInfo" class="muted">Renseigne ton prénom et ton nom pour participer.</p>
         <form id="joinForm">
-          <div class="fields">
-            <label for="firstName">Prénom</label>
-            <input id="firstName" name="firstName" minlength="2" maxlength="40" required placeholder="Ex. Camille" autocomplete="given-name">
-            <label for="lastName">Nom</label>
-            <input id="lastName" name="lastName" minlength="1" maxlength="40" required placeholder="Ex. Dupont" autocomplete="family-name">
+          <div class="field-row">
+            <div class="field">
+              <label for="firstName">Prénom</label>
+              <input id="firstName" name="firstName" minlength="2" maxlength="40" required autocomplete="given-name" placeholder="Camille">
+            </div>
+            <div class="field">
+              <label for="lastName">Nom</label>
+              <input id="lastName" name="lastName" minlength="1" maxlength="40" required autocomplete="family-name" placeholder="Dupont">
+            </div>
           </div>
-          <button id="join" type="submit" disabled>Connexion au serveur...</button>
+          <button id="joinButton" class="button button-primary" type="submit" disabled>Connexion en cours…</button>
+          <p id="joinMsg" class="field-message" role="status" aria-live="polite" hidden></p>
         </form>
-        <button id="switchParticipant" type="button" class="secondary hidden">Inscrire une autre personne</button>
-        <p class="status" id="joinMsg" role="status" aria-live="polite"></p>
-      </section>
+      </div>
+      <div id="joinSuccess" class="success-only" role="status" hidden>
+        <span class="success-symbol" aria-hidden="true">✓</span>
+        <strong>Inscription enregistrée !</strong>
+      </div>
+      <div id="joinChecking" class="checking-only" role="status" hidden>Vérification de ton inscription…</div>
+      <div id="joinClosed" class="closed-only" role="status" hidden>Les inscriptions sont terminées.</div>
+      <div id="joinInvalid" class="invalid-only" hidden>
+        <p>Cette inscription n'est plus reconnue. Contacte l'organisateur ou recommence si les inscriptions sont ouvertes.</p>
+        <button id="resetSession" type="button" class="button button-muted">Recommencer l'inscription</button>
+      </div>
+    </section>
 
-      <section class="card hidden" id="personal">
-        <div class="pill">🎁 Résultat personnel</div>
-        <h2>Ton espace secret</h2>
-        <p id="welcome"></p>
-        <div id="result" class="result">Le tirage n'a pas encore eu lieu.</div>
-        <p class="muted">Conserve ce lien personnel pour retrouver ton résultat. Ne le partage pas.</p>
-        <label for="personalLink">Mon lien personnel à conserver</label>
-        <input id="personalLink" class="personal-link" type="text" readonly autocomplete="off" spellcheck="false">
-        <button id="copy" type="button">Copier mon lien personnel</button>
-        <p id="copyMsg" class="status" role="status" aria-live="polite"></p>
-      </section>
+    <section id="personal" class="panel secret-panel" aria-labelledby="personalTitle" hidden>
+      <div class="panel-heading">
+        <span class="step-badge">02</span>
+        <h2 id="personalTitle">Mon espace</h2>
+      </div>
+      <div id="result" class="result pending" role="status" aria-live="polite">Le tirage n’a pas encore eu lieu.</div>
+    </section>
 
-      <section class="card">
-        <div class="pill">👥 Participants inscrits</div>
-        <h2>Liste des participants (<span id="count">0</span>)</h2>
-        <div class="names" id="names"></div>
-        <p id="drawStatus" class="muted">En attente du tirage par l'organisateur.</p>
-      </section>
+    <section id="pushPanel" class="push-panel" aria-label="Notifications de tirage" hidden>
+      <button id="enablePush" type="button" class="push-action"><span aria-hidden="true">🔔</span> Me prévenir du tirage</button>
+      <p id="pushStatus" class="push-help" role="status" aria-live="polite" hidden></p>
+    </section>
 
-      <details class="admin">
-        <summary>Espace organisateur</summary>
-        <div class="card">
-          <div class="pill">🔐 Réservé à l'organisateur</div>
-          <label for="code">Code administrateur</label>
-          <input id="code" type="password" placeholder="Code secret">
-          <button id="draw" type="button" disabled>Lancer le tirage</button>
-          <p class="muted" id="storageStatus"></p>
-          <p class="status" id="adminMsg" role="status" aria-live="polite"></p>
-          <p class="muted">Action définitive : vérifie que tout le monde est inscrit avant de lancer le tirage.</p>
+    <details id="adminDetails" class="admin">
+      <summary>Accès organisateur <span class="summary-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="admin-content">
+        <div id="adminLocked" class="panel admin-login">
+          <h2>Administration</h2>
+          <p class="admin-explainer">Gère les participants avant de lancer le tirage.</p>
+          <form id="adminLoginForm">
+            <label for="adminCode">Code organisateur</label>
+            <input id="adminCode" type="password" placeholder="Code secret" autocomplete="off" required>
+            <button class="button button-primary" type="submit" id="adminLoginButton">Accéder à la liste</button>
+          </form>
+          <p id="adminLoginMsg" class="field-message" role="status" aria-live="polite" hidden></p>
         </div>
-      </details>
-
-      <footer>Joyeux Noël ✨ • Tirage confidentiel • Budget 10 € à 15 €</footer>
-    </div>
+        <div id="adminDashboard" class="panel admin-dashboard" hidden>
+          <div class="admin-top">
+            <div>
+              <h2>Participants</h2>
+              <p id="adminCounts" class="admin-counts">—</p>
+            </div>
+            <button type="button" class="text-button" id="adminLogout">Quitter</button>
+          </div>
+          <div id="adminList" class="admin-list" aria-live="polite"></div>
+          <div id="adminDrawSection" class="draw-section">
+            <div class="draw-divider"></div>
+            <h3>Le tirage au sort</h3>
+            <p id="drawExplanation" class="draw-explanation">Tu pourras lancer le tirage une fois tout le monde inscrit.</p>
+            <button type="button" id="adminDraw" class="button button-primary" disabled>Lancer le tirage au sort</button>
+          </div>
+          <p id="adminMsg" class="field-message" role="status" aria-live="polite" hidden></p>
+        </div>
+      </div>
+    </details>
+    <footer>Secret Santa 2026 · La surprise reste secrète ✦</footer>
   </main>
-
-  <script>
-    const $ = id => document.getElementById(id);
-
-    function createSnowfall(){
-      const host = $('snowfall');
-      const icons = ['❄','•','✦'];
-      const total = 32;
-      for(let i=0;i<total;i++){
-        const flake = document.createElement('span');
-        flake.className = 'flake';
-        flake.textContent = icons[Math.floor(Math.random()*icons.length)];
-        flake.style.left = Math.random()*100 + 'vw';
-        flake.style.fontSize = (10 + Math.random()*14) + 'px';
-        flake.style.animationDuration = (8 + Math.random()*10) + 's';
-        flake.style.animationDelay = (-Math.random()*18) + 's';
-        flake.style.setProperty('--drift', (-40 + Math.random()*80) + 'px');
-        host.appendChild(flake);
-      }
-    }
-    createSnowfall();
-
-    const storageKey = 'secret-santa-token';
-    const isFile = location.protocol === 'file:';
-    function readStoredToken(){
-      try { return localStorage.getItem(storageKey); } catch { return null; }
-    }
-    let token = new URL(location.href).searchParams.get('t') || readStoredToken();
-    const pendingKey = 'secret-santa-pending-registration';
-    let pendingRegistration = null;
-    try { pendingRegistration = localStorage.getItem(pendingKey); } catch {}
-    if(pendingRegistration && !/^[a-f0-9]{48}$/.test(pendingRegistration)) pendingRegistration = null;
-    function registrationSecret(){
-      if(!pendingRegistration){
-        const bytes = crypto.getRandomValues(new Uint8Array(24));
-        pendingRegistration = [...bytes].map(x => x.toString(16).padStart(2, '0')).join('');
-        try { localStorage.setItem(pendingKey, pendingRegistration); } catch {}
-      }
-      return pendingRegistration;
-    }
-    function clearPending(){
-      pendingRegistration = null;
-      try { localStorage.removeItem(pendingKey); } catch {}
-    }
-    let sessionInvalid = false;
-    let state = null;
-    let profile = null;
-    let filledToken = null;
-    let busy = false;
-    let drawing = false;
-    let refreshing = false;
-    let revision = 0;
-
-    function personalUrl(){
-      const url = new URL(location.href);
-      url.searchParams.set('t', token);
-      url.hash = '';
-      return url.href;
-    }
-    function storeToken(next){
-      token = next || null;
-      revision++;
-      try {
-        if(token) localStorage.setItem(storageKey, token);
-        else localStorage.removeItem(storageKey);
-      } catch { /* A personal link also works when browser storage is blocked. */ }
-      if(!isFile){
-        const url = new URL(location.href);
-        if(token) url.searchParams.set('t', token);
-        else url.searchParams.delete('t');
-        try { history.replaceState(null, '', url.pathname + url.search + url.hash); } catch {}
-      }
-    }
-    function message(id, text, success = false){
-      $(id).textContent = text;
-      $(id).classList.toggle('success', success);
-    }
-    function connectionMessage(text){
-      $('connectionMsg').textContent = text;
-      $('connectionMsg').classList.toggle('hidden', !text);
-    }
-    async function api(url, data, headers = {}){
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
-      try {
-        const response = await fetch(url, {
-          method: data === undefined ? 'GET' : 'POST',
-          headers: {'Content-Type':'application/json', ...headers},
-          body: data === undefined ? undefined : JSON.stringify(data),
-          cache: 'no-store', signal: controller.signal
-        });
-        const raw = await response.text();
-        let parsed;
-        try { parsed = JSON.parse(raw); }
-        catch {
-          if(response.status >= 500){
-            throw Error('Le serveur redémarre ou est momentanément indisponible. Ton lien personnel reste conservé. La reconnexion est automatique.');
-          }
-          throw Error('Le serveur ne renvoie pas la r\u00e9ponse attendue. V\u00e9rifie que le site utilise le serveur Node.js (npm start), et non uniquement index.html.');
-        }
-        if(!parsed || typeof parsed !== 'object') throw Error('R\u00e9ponse serveur invalide.');
-        if(!response.ok){
-          const error = new Error(parsed.error || 'La requ\u00eate a \u00e9chou\u00e9.');
-          error.status = response.status;
-          throw error;
-        }
-        return parsed;
-      } catch(error){
-        if(error.name === 'AbortError') throw Error('Le serveur met trop de temps \u00e0 r\u00e9pondre. R\u00e9essaie dans un instant.');
-        if(error instanceof TypeError) throw Error('Connexion au serveur impossible. V\u00e9rifie ta connexion puis r\u00e9essaie.');
-        throw error;
-      } finally { clearTimeout(timer); }
-    }
-
-    function render(){
-      // A remembered personal token must never hide the name fields.
-      $('joinCard').classList.remove('hidden');
-      const closed = Boolean(state && state.drawn);
-      const known = Boolean(token && profile);
-      const pending = Boolean(token && !profile);
-      $('firstName').readOnly = closed || busy || pending;
-      $('lastName').readOnly = closed || busy || pending;
-      $('join').disabled = isFile || !state || closed || busy || pending;
-      $('join').textContent = busy ? 'Enregistrement...' : closed ? 'Inscriptions ferm\u00e9es'
-        : pending ? 'V\u00e9rification de ton inscription...' : !state ? 'Connexion au serveur...'
-        : known ? 'Enregistrer mes informations' : 'Je participe !';
-      $('joinTitle').textContent = known ? 'Ton inscription' : 'Rejoins la f\u00eate';
-      $('sessionInfo').textContent = closed
-        ? 'Le tirage a eu lieu : les inscriptions et les modifications sont ferm\u00e9es.'
-        : known ? 'Tu es d\u00e9j\u00e0 inscrit. Tu peux compl\u00e9ter ou corriger ton pr\u00e9nom et ton nom avant le tirage.'
-        : pending ? 'V\u00e9rification de ton lien personnel...'
-        : 'Renseigne ton pr\u00e9nom et ton nom pour participer.';
-      $('switchParticipant').classList.toggle('hidden', !(known || sessionInvalid) || closed);
-      $('switchParticipant').textContent = sessionInvalid ? 'Revenir au formulaire' : 'Inscrire une autre personne';
-      $('switchParticipant').disabled = busy;
-      $('personal').classList.toggle('hidden', !token);
-      $('draw').disabled = !state || closed || drawing;
-      if(known){
-        if(filledToken !== token){
-          // The earliest version only stored one name. Do not guess a surname.
-          $('firstName').value = profile.firstName || profile.name || '';
-          $('lastName').value = profile.lastName || '';
-          filledToken = token;
-        }
-        $('welcome').textContent = 'Bonjour ' + profile.name + ' !';
-        $('result').textContent = profile.drawn
-          ? 'Tu offres un cadeau \u00e0 ' + profile.recipient + ' !'
-          : 'Le tirage n\u2019a pas encore eu lieu.';
-        $('personalLink').value = personalUrl();
-      } else {
-        $('welcome').textContent = '';
-        $('result').textContent = '';
-        $('personalLink').value = token ? personalUrl() : '';
-        if(token){
-          $('welcome').textContent = 'Ton lien personnel est conservé.';
-          $('result').textContent = sessionInvalid ? 'Cette inscription n’est pas retrouvée dans la base actuelle. Contacte l’organisateur.' : 'Reconnexion en cours. Il n’est pas nécessaire de te réinscrire.';
-        }
-      }
-      if(state){
-        $('storageStatus').textContent = state.storage === 'postgres'
-          ? 'Sauvegarde PostgreSQL active : les inscriptions et le tirage ne sont pas stockés sur le serveur web.'
-          : 'Stockage fichier : un disque persistant est indispensable en hébergement.';
-        $('count').textContent = state.participants.length;
-        $('names').replaceChildren(...state.participants.map(name => {
-          const element = document.createElement('span');
-          element.className = 'name';
-          element.textContent = name;
-          return element;
-        }));
-        $('drawStatus').textContent = closed
-          ? 'Le tirage a eu lieu ! Chaque participant retrouve son r\u00e9sultat via son lien personnel.'
-          : 'En attente du tirage par l\u2019organisateur.';
-      }
-    }
-    function forgetSession(){
-      sessionInvalid = false;
-      clearPending();
-      storeToken(null);
-      profile = null;
-      filledToken = null;
-      $('joinForm').reset();
-      message('copyMsg', '');
-    }
-    function invalidSession(){
-      // Never discard a secret merely because a database is missing or unavailable.
-      sessionInvalid = true;
-      profile = null;
-      message('joinMsg', 'Ton lien reste conservé. Cette base ne retrouve pas ton inscription : demande à l’organisateur de vérifier sa sauvegarde. Ne te réinscris pas automatiquement.');
-    }
-    async function refresh(){
-      if(isFile || refreshing || busy) return;
-      refreshing = true;
-      const stamp = revision;
-      const currentToken = token;
-      try {
-        const next = await api('/api/state');
-        if(stamp !== revision) return;
-        if(!Array.isArray(next.participants)) throw Error('R\u00e9ponse serveur invalide.');
-        state = next;
-        if(!currentToken && pendingRegistration){
-          try {
-            const recovered = await api('/api/result', {token: pendingRegistration});
-            if(stamp !== revision) return;
-            storeToken(pendingRegistration);
-            clearPending();
-            profile = recovered;
-            sessionInvalid = false;
-            message('joinMsg', 'Ton inscription a été retrouvée après l’interruption.', true);
-            connectionMessage('');
-            return;
-          } catch(error){
-            if(error.status !== 403) throw error;
-            // No committed registration yet: the same key can be retried safely.
-          }
-        }
-        if(currentToken){
-          try {
-            const result = await api('/api/result', {token: currentToken});
-            if(stamp !== revision) return;
-            profile = result;
-            if(sessionInvalid) message('joinMsg', 'Ton inscription a été retrouvée.', true);
-            sessionInvalid = false;
-            // Save a valid link opened on a new browser, without changing revision.
-            try { localStorage.setItem(storageKey, currentToken); } catch {}
-          } catch(error){
-            if(stamp !== revision) return;
-            if(error.status === 403) invalidSession();
-            else throw error;
-          }
-        }
-        connectionMessage('');
-      } catch(error){
-        if(stamp === revision) connectionMessage(error.message);
-      } finally {
-        refreshing = false;
-        render();
-      }
-    }
-
-    $('joinForm').addEventListener('submit', async event => {
-      event.preventDefault();
-      if(busy || !state || state.drawn || isFile || (token && !profile)) return;
-      const firstName = $('firstName').value.trim();
-      const lastName = $('lastName').value.trim();
-      if(firstName.length < 2 || !lastName){
-        message('joinMsg', 'Renseigne un pr\u00e9nom d\u2019au moins 2 caract\u00e8res et ton nom.');
-        return;
-      }
-      const editing = Boolean(token && profile);
-      busy = true;
-      revision++;
-      message('joinMsg', '');
-      render();
-      try {
-        const payload = {firstName, lastName};
-        if(editing) payload.token = token;
-        else payload.registrationToken = registrationSecret();
-        const result = await api(editing ? '/api/profile' : '/api/join', payload);
-        if(!editing) { storeToken(result.token); clearPending(); }
-        sessionInvalid = false;
-        profile = {...result, firstName: result.firstName || firstName, lastName: result.lastName || lastName, drawn:Boolean(result.drawn), recipient:result.recipient || null};
-        filledToken = null;
-        message('joinMsg', editing ? 'Tes informations sont enregistr\u00e9es.' : 'Inscription enregistr\u00e9e ! Conserve ton lien personnel ci-dessous.', true);
-      } catch(error){
-        if(error.status === 403 && editing) invalidSession();
-        else message('joinMsg', error.message);
-      } finally {
-        busy = false;
-        render();
-        await refresh();
-      }
-    });
-
-    $('switchParticipant').addEventListener('click', () => {
-      if(busy || (!profile && !sessionInvalid) || !state || state.drawn) return;
-      if(!confirm('Avant de changer de participant, conserve ton lien personnel affich\u00e9 ci-dessous. Il sera n\u00e9cessaire pour retrouver ton r\u00e9sultat. Ton inscription ne sera pas supprim\u00e9e.\n\nAs-tu conserv\u00e9 ce lien ?')) return;
-      forgetSession();
-      message('joinMsg', 'Le formulaire est pr\u00eat pour une autre personne. Chaque lien personnel doit rester priv\u00e9.');
-      render();
-      $('firstName').focus();
-    });
-    $('draw').addEventListener('click', async () => {
-      if(drawing || !state || state.drawn) return;
-      if(!confirm('Lancer d\u00e9finitivement le tirage ? V\u00e9rifie que tout le monde est inscrit.')) return;
-      drawing = true;
-      render();
-      try {
-        await api('/api/draw', {}, {'x-admin-code': $('code').value});
-        $('code').value = '';
-        state.drawn = true;
-        message('adminMsg', 'Tirage effectu\u00e9 !', true);
-      } catch(error){ message('adminMsg', error.message); }
-      finally { drawing = false; render(); await refresh(); }
-    });
-    $('copy').addEventListener('click', async () => {
-      if(!token) return;
-      try {
-        await navigator.clipboard.writeText(personalUrl());
-        message('copyMsg', 'Lien copi\u00e9. Conserve-le sans le partager.', true);
-      } catch {
-        $('personalLink').focus();
-        $('personalLink').select();
-        message('copyMsg', 'Copie le lien s\u00e9lectionn\u00e9 et conserve-le dans un endroit priv\u00e9.');
-      }
-    });
-    if(isFile){
-      connectionMessage('Aper\u00e7u local : les champs sont visibles, mais l\u2019inscription n\u2019est possible que depuis le serveur de l\u2019application.');
-    }
-    render();
-    refresh();
-    setInterval(() => { if(!document.hidden) refresh(); }, 10000);
-    window.addEventListener('online', refresh);
-    document.addEventListener('visibilitychange', () => { if(!document.hidden) refresh(); });
-  </script>
 </body>
 </html>
